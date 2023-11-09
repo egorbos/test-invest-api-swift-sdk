@@ -87,20 +87,24 @@ public struct SandboxTest {
         print(" - Операции: \(operationsByCursor.items.count)")
         
         print("🔘 Тестируем выставление лимитной заявки в песочнице...", terminator: "")
+        let limitOrderPrice = marketOrder.executedOrderPrice.toQuotation()
+            .decreaseBy(percentage: 5, priceStep: 0.01)
         let limitOrder = try client.sendRequest(
             .postSandboxOrder(
                 accountId: accountId, instrumentId: testInstrumentUid, orderRequestId: UUID().uuidString,
-                type: .limit, direction: .buy, price: Quotation(units: marketOrder.executedOrderPrice.units - 100, nano: 0), quantity: 1
+                type: .limit, direction: .buy, price: limitOrderPrice, quantity: 1
             )
         ).wait()
         printTestResult(!limitOrder.orderId.isEmpty && limitOrder.status == .new)
         print(" - Заявка выставлена. ID: \(limitOrder.orderId)")
         
         print("🔘 Тестируем изменение лимитной заявки в песочнице...", terminator: "")
+        let changedLimitOrderPrice = marketOrder.executedOrderPrice.toQuotation()
+            .decreaseBy(percentage: 7, priceStep: 0.01)
         let changedLimitOrder = try client.sendRequest(
             .replaceSandboxOrder(
                 accountId: accountId, orderId: limitOrder.orderId, orderRequestId: UUID().uuidString,
-                price: Quotation(units: marketOrder.executedOrderPrice.units - 50, nano: 0), priceType: .currency, quantity: 1
+                price: changedLimitOrderPrice, priceType: .currency, quantity: 1
             )
         ).wait()
         printTestResult(!changedLimitOrder.orderId.isEmpty && changedLimitOrder.status == .new)
@@ -215,23 +219,27 @@ public struct SandboxTest {
             )
         )
         printTestResult(!operationsByCursor.items.isEmpty && operationsByCursor.items.contains(where: { $0.figi == marketOrder.figi }))
-        print(" - Операции: \(operationsByCursor.items.count)")
+        print(" - Операции: \(operationsByCursor.items.count)")        
         
         print("🔘 Тестируем выставление лимитной заявки в песочнице...", terminator: "")
+        let limitOrderPrice = marketOrder.executedOrderPrice.toQuotation()
+            .decreaseBy(percentage: 5, priceStep: 0.01)
         let limitOrder = try await client.sendRequest(
             .postSandboxOrder(
                 accountId: accountId, instrumentId: testInstrumentUid, orderRequestId: UUID().uuidString,
-                type: .limit, direction: .buy, price: Quotation(units: marketOrder.executedOrderPrice.units - 100, nano: 0), quantity: 1
+                type: .limit, direction: .buy, price: limitOrderPrice, quantity: 1
             )
         )
         printTestResult(!limitOrder.orderId.isEmpty && limitOrder.status == .new)
         print(" - Заявка выставлена. ID: \(limitOrder.orderId)")
         
         print("🔘 Тестируем изменение лимитной заявки в песочнице...", terminator: "")
+        let changedLimitOrderPrice = marketOrder.executedOrderPrice.toQuotation()
+            .decreaseBy(percentage: 7, priceStep: 0.01)
         let changedLimitOrder = try await client.sendRequest(
             .replaceSandboxOrder(
                 accountId: accountId, orderId: limitOrder.orderId, orderRequestId: UUID().uuidString,
-                price: Quotation(units: marketOrder.executedOrderPrice.units - 50, nano: 0), priceType: .currency, quantity: 1
+                price: changedLimitOrderPrice, priceType: .currency, quantity: 1
             )
         )
         printTestResult(!changedLimitOrder.orderId.isEmpty && changedLimitOrder.status == .new)

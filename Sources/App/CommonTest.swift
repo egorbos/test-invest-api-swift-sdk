@@ -460,22 +460,24 @@ public struct CommonTest {
         print(" - Заявка исполнена. ID: \(bestPriceOrder.orderId)")
         
         print("🔘 Тестируем выставление лимитной заявки...", terminator: "")
+        let limitOrderPrice = marketOrder.executedOrderPrice.toQuotation()
+            .decreaseBy(percentage: 5, priceStep: 0.01)
         let limitOrder = try client.sendRequest(
             .postOrder(
-                accountId: choosenAccount.id, instrumentId: testInstrumentUid, orderRequestId: nil, type: .limit, direction: .buy,
-                price: Quotation(units: marketOrder.executedOrderPrice.units, nano: marketOrder.executedOrderPrice.nano - 250000000),
-                quantity: 1
+                accountId: choosenAccount.id, instrumentId: testInstrumentUid, orderRequestId: nil,
+                type: .limit, direction: .buy, price: limitOrderPrice, quantity: 1
             )
         ).wait()
         printTestResult(!limitOrder.orderId.isEmpty && limitOrder.status == .new)
         print(" - Заявка выставлена. ID: \(limitOrder.orderId)")
         
         print("🔘 Тестируем изменение лимитной заявки...", terminator: "")
+        let changedLimitOrderPrice = marketOrder.executedOrderPrice.toQuotation()
+            .decreaseBy(percentage: 7, priceStep: 0.01)
         let changedLimitOrder = try client.sendRequest(
             .replaceOrder(
                 accountId: choosenAccount.id, orderId: limitOrder.orderId, orderRequestId: UUID().uuidString,
-                price: Quotation(units: marketOrder.executedOrderPrice.units, nano: marketOrder.executedOrderPrice.nano - 350000000),
-                priceType: .currency, quantity: 1
+                price: changedLimitOrderPrice, priceType: .currency, quantity: 1
             )
         ).wait()
         printTestResult(!changedLimitOrder.orderId.isEmpty && changedLimitOrder.status == .new)
@@ -508,8 +510,8 @@ public struct CommonTest {
         let stopOrderId = try client.sendRequest(
             .postStopOrder(
                 accountId: choosenAccount.id, instrumentId: testInstrumentUid,
-                quantity: 2, price: .zero(), stopPrice: .init(units: 7, nano: 200000000),
-                direction: .sell, stopOrderType: .stopLoss, expirationType: .goodTillCancel, expireDate: nil
+                quantity: 2, price: .zero(), stopPrice: .init(decimalValue: 5.5), direction: .sell,
+                stopOrderType: .stopLoss, expirationType: .goodTillCancel, expireDate: nil
             )
         ).wait()
         printTestResult(!stopOrderId.isEmpty)
@@ -945,22 +947,24 @@ public struct CommonTest {
         print(" - Заявка исполнена. ID: \(bestPriceOrder.orderId)")
         
         print("🔘 Тестируем выставление лимитной заявки...", terminator: "")
+        let limitOrderPrice = marketOrder.executedOrderPrice.toQuotation()
+            .decreaseBy(percentage: 5, priceStep: 0.01)
         let limitOrder = try await client.sendRequest(
             .postOrder(
-                accountId: choosenAccount.id, instrumentId: testInstrumentUid, orderRequestId: nil, type: .limit, direction: .buy,
-                price: Quotation(units: marketOrder.executedOrderPrice.units, nano: marketOrder.executedOrderPrice.nano - 250000000),
-                quantity: 1
+                accountId: choosenAccount.id, instrumentId: testInstrumentUid, orderRequestId: nil,
+                type: .limit, direction: .buy, price: limitOrderPrice, quantity: 1
             )
         )
         printTestResult(!limitOrder.orderId.isEmpty && limitOrder.status == .new)
         print(" - Заявка выставлена. ID: \(limitOrder.orderId)")
         
         print("🔘 Тестируем изменение лимитной заявки...", terminator: "")
+        let changedLimitOrderPrice = marketOrder.executedOrderPrice.toQuotation()
+            .decreaseBy(percentage: 7, priceStep: 0.01)
         let changedLimitOrder = try await client.sendRequest(
             .replaceOrder(
                 accountId: choosenAccount.id, orderId: limitOrder.orderId, orderRequestId: UUID().uuidString,
-                price: Quotation(units: marketOrder.executedOrderPrice.units, nano: marketOrder.executedOrderPrice.nano - 350000000),
-                priceType: .currency, quantity: 1
+                price: changedLimitOrderPrice, priceType: .currency, quantity: 1
             )
         )
         printTestResult(!changedLimitOrder.orderId.isEmpty && changedLimitOrder.status == .new)
@@ -993,8 +997,8 @@ public struct CommonTest {
         let stopOrderId = try await client.sendRequest(
             .postStopOrder(
                 accountId: choosenAccount.id, instrumentId: testInstrumentUid,
-                quantity: 2, price: .zero(), stopPrice: .init(units: 7, nano: 200000000),
-                direction: .sell, stopOrderType: .stopLoss, expirationType: .goodTillCancel, expireDate: nil
+                quantity: 2, price: .zero(), stopPrice: .init(decimalValue: 5.5), direction: .sell,
+                stopOrderType: .stopLoss, expirationType: .goodTillCancel, expireDate: nil
             )
         )
         printTestResult(!stopOrderId.isEmpty)
