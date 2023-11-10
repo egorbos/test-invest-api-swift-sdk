@@ -1,5 +1,4 @@
 import App
-import Darwin
 import Foundation
 
 private var token = ProcessInfo.processInfo.environment["API_TOKEN"] ?? ""
@@ -23,25 +22,35 @@ private func testResultSymbol(_ result: Bool) -> String {
     }
 }
 
+func timeString(time: TimeInterval) -> String {
+    let minutes = Int(time) / 60 % 60
+    let seconds = Int(time) % 60
+    return String(format: "%02i мин. %02i сек.", minutes, seconds)
+}
+
 private func startEventBasedTests(_ closure: () throws -> Void) {
-    do {
-        let start = CFAbsoluteTimeGetCurrent()
+    startTests {
         try closure()
-        let diff = CFAbsoluteTimeGetCurrent() - start
-        print("\nВсе тесты завершены успешно (\(Double(round(1000 * diff) / 1000)) сек.)...\(testResultSymbol(true))")
-    } catch {
-        print(testResultSymbol(false))
-        print("\nОшибка: \(error)")
-        exit(EXIT_FAILURE)
     }
 }
 
-private func startAsyncBasedTests(_ closure: () async throws -> Void) async {
+private func startAsyncBasedTests(_ closure: @escaping () async throws -> Void) async {
+    startTests {
+        let semaphore = DispatchSemaphore(value: 0)
+        Task {
+            try await closure()
+            semaphore.signal()
+        }
+        semaphore.wait()
+    }
+}
+
+private func startTests(_ closure: () throws -> Void) {
     do {
-        let start = CFAbsoluteTimeGetCurrent()
-        try await closure()
-        let diff = CFAbsoluteTimeGetCurrent() - start
-        print("\nВсе тесты завершены успешно (\(Double(round(1000 * diff) / 1000)) сек.)...\(testResultSymbol(true))")
+        let start = Date()
+        try closure()
+        let diff = Date().timeIntervalSince(start)
+        print("\nВсе тесты завершены успешно (\(timeString(time: diff)))...\(testResultSymbol(true))")
     } catch {
         print(testResultSymbol(false))
         print("\nОшибка: \(error)")

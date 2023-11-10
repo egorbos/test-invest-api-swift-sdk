@@ -9,7 +9,7 @@ let package = Package(
         .macOS(.v12)
     ],
     dependencies: [
-        .package(url: "https://github.com/egorbos/invest-api-swift-sdk.git", from: "0.1.1"),
+        .package(url: "https://github.com/egorbos/invest-api-swift-sdk.git", from: "0.2.0"),
     ],
     targets: [
         .target(

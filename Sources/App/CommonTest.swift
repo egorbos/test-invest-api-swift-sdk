@@ -330,111 +330,108 @@ public struct CommonTest {
         ).wait()
         printTestResult(!withdrawLimits.money.isEmpty)
         
-        
-        let userDefaults = UserDefaults.standard
-        
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = .init(abbreviation: "UTC")!
         let dateComponents = calendar.dateComponents([.year, .month, .day], from: Date())
-        
-        let brokerReportFromDate = calendar.date(from:
-                .init(calendar: calendar, timeZone: calendar.timeZone,
-                      year: dateComponents.year!, month: dateComponents.month! - 1, day: 1)
+
+        let brokerReportFromDate = calendar.date(
+            from: .init(
+                calendar: calendar, timeZone: calendar.timeZone,
+                year: dateComponents.year!, month: dateComponents.month! - 1, day: 1
+            )
         )!
-        
+
         let range = calendar.range(of: .day, in: .month, for: brokerReportFromDate)!
-        
-        let brokerReportToDate = calendar.date(from:
-                .init(calendar: calendar, timeZone: calendar.timeZone,
-                      year: dateComponents.year!, month: dateComponents.month! - 1, day: range.count,
-                      hour: 23, minute: 59, second: 59)
+
+        let brokerReportToDate = calendar.date(
+            from: .init(
+                calendar: calendar, timeZone: calendar.timeZone,
+                year: dateComponents.year!, month: dateComponents.month! - 1,
+                day: range.count - 4, hour: 23, minute: 59, second: 59
+            )
         )!
-        
+
         print("🔘 Тестируем отправку запроса на формирование брокерского отчёта...", terminator: "")
-        let brokerReportTaskIdKey = "\(choosenAccount.id)[\(brokerReportFromDate)-\(brokerReportToDate)]"
-        let brokerReportTaskIdExists = userDefaults.dictionaryRepresentation().keys.contains(where: { $0 == brokerReportTaskIdKey } )
-        let brokerReportTaskId = brokerReportTaskIdExists ? userDefaults.string(forKey: brokerReportTaskIdKey)! : try client.sendRequest(
+        let generateBrokerReportResult = try client.sendRequest(
             .generateBrokerReport(accountId: choosenAccount.id, from: brokerReportFromDate, to: brokerReportToDate)
         ).wait()
-        printTestResult(!brokerReportTaskId.isEmpty)
-        
-        if (!brokerReportTaskIdExists && !brokerReportTaskId.isEmpty) {
-            userDefaults.setValue(brokerReportTaskId, forKey: brokerReportTaskIdKey)
-        }
-        
-        if (!brokerReportTaskId.isEmpty) {
-            print(" - ID запроса: \(brokerReportTaskId)")
-            
+        printTestResult(!generateBrokerReportResult.id.isEmpty || generateBrokerReportResult.report.page == 0)
+
+        if (generateBrokerReportResult.id.isEmpty) {
+            print(" - Брокерский отчёт за данный период запрашивался ранее.")
+        } else {
+            print(" - ID запроса: \(generateBrokerReportResult.id)")
+
             var standardOutput = FileHandle.standardOutput
-            
+
             print("🔘 Тестируем получение брокерского отчёта", terminator: "", to: &standardOutput)
             for tick in 1...5 {
                 sleep(1)
                 print("...\(tick)", terminator: "", to: &standardOutput)
             }
-            
+
             let brokerReport = try client.sendRequest(
-                .getBrokerReport(taskId: brokerReportTaskId, page: 0)
+                .getBrokerReport(taskId: generateBrokerReportResult.id, page: 0)
             ).wait()
             printTestResult(brokerReport.page == 0)
         }
         
-        
-        let divForeignReportFromDate = calendar.date(from:
-                .init(calendar: calendar, timeZone: calendar.timeZone,
-                      year: dateComponents.year! - 1, month: 1, day: 1)
+        let divForeignReportFromDate = calendar.date(
+            from: .init(
+                calendar: calendar, timeZone: calendar.timeZone,
+                year: dateComponents.year! - 1, month: 1, day: 1
+            )
         )!
-        
-        let divForeignReportToDate = calendar.date(from:
-                .init(calendar: calendar, timeZone: calendar.timeZone,
-                      year: dateComponents.year! - 1, month: 12, day: 31,
-                      hour: 23, minute: 59, second: 59)
+
+        let divForeignReportToDate = calendar.date(
+            from: .init(
+                calendar: calendar, timeZone: calendar.timeZone,
+                year: dateComponents.year! - 1, month: 12, day: 31,
+                hour: 23, minute: 59, second: 59
+            )
         )!
         
         print("🔘 Тестируем отправку запроса на формирование отчёта отчёта \"Справка о доходах за пределами РФ\"...", terminator: "")
-        let divForeignReportTaskIdKey = "\(choosenAccount.id)[\(divForeignReportFromDate)-\(divForeignReportToDate)]"
-        let divForeignReportTaskIdExists = userDefaults.dictionaryRepresentation().keys.contains(where: { $0 == divForeignReportTaskIdKey } )
-        let divForeignReportTaskId = divForeignReportTaskIdExists ? userDefaults.string(forKey: divForeignReportTaskIdKey)! : try client.sendRequest(
+        let generateDivForeignReportResult = try client.sendRequest(
             .generateDivForeignIssuerReport(accountId: choosenAccount.id, from: divForeignReportFromDate, to: divForeignReportToDate)
         ).wait()
-        printTestResult(!divForeignReportTaskId.isEmpty)
-        
-        if (!divForeignReportTaskIdExists && !divForeignReportTaskId.isEmpty) {
-            userDefaults.setValue(divForeignReportTaskId, forKey: divForeignReportTaskIdKey)
-        }
-        
-        if (!divForeignReportTaskId.isEmpty) {
-            print(" - ID запроса: \(divForeignReportTaskId)")
-            
+        printTestResult(!generateDivForeignReportResult.id.isEmpty || generateDivForeignReportResult.report.page == 0)
+
+        if (generateDivForeignReportResult.id.isEmpty) {
+            print(" - Отчёт \"Справка о доходах за пределами РФ\" за данный период запрашивался ранее.")
+        } else {
+            print(" - ID запроса: \(generateDivForeignReportResult.id)")
+
             var standardOutput = FileHandle.standardOutput
-            
+
             print("🔘 Тестируем получение отчёта \"Справка о доходах за пределами РФ\"", terminator: "", to: &standardOutput)
             for tick in 1...5 {
                 sleep(1)
                 print("...\(tick)", terminator: "", to: &standardOutput)
             }
-            
+
             let divForeignReport = try client.sendRequest(
-                .getDivForeignIssuerReport(taskId: divForeignReportTaskId, page: 0)
+                .getDivForeignIssuerReport(taskId: generateDivForeignReportResult.id, page: 0)
             ).wait()
             printTestResult(divForeignReport.page == 0)
         }
         
-        
-        let operationsByCursorFromDate = calendar.date(from:
-                .init(calendar: calendar, timeZone: calendar.timeZone,
-                      year: dateComponents.year!, month: 1, day: 1)
+        let operationsByCursorFromDate = calendar.date(
+            from: .init(
+                calendar: calendar, timeZone: calendar.timeZone,
+                year: dateComponents.year!, month: 1, day: 1
+            )
         )!
-        
+
         print("🔘 Тестируем получение списка операций по счёту с пагинацией...", terminator: "")
         let operationsByCursor = try client.sendRequest(
             .getOperationsByCursor(
                 accountId: choosenAccount.id, instrumentId: "", from: operationsByCursorFromDate, to: fromDate,
                 cursor: "", limit: 1, types: [.buy], state: .executed, withCommissions: true, withTrades: true, withOvernights: true
-            )
+                )
         ).wait()
         printTestResult(!operationsByCursor.items.isEmpty)
-        
+                
         
         // MARK: OrdersService
         print("\n⚪ OrdersService")
@@ -817,108 +814,105 @@ public struct CommonTest {
         )
         printTestResult(!withdrawLimits.money.isEmpty)
         
-        
-        let userDefaults = UserDefaults.standard
-        
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = .init(abbreviation: "UTC")!
         let dateComponents = calendar.dateComponents([.year, .month, .day], from: Date())
-        
-        let brokerReportFromDate = calendar.date(from:
-                .init(calendar: calendar, timeZone: calendar.timeZone,
-                      year: dateComponents.year!, month: dateComponents.month! - 1, day: 1)
+
+        let brokerReportFromDate = calendar.date(
+            from: .init(
+                calendar: calendar, timeZone: calendar.timeZone,
+                year: dateComponents.year!, month: dateComponents.month! - 1, day: 1
+            )
         )!
-        
+
         let range = calendar.range(of: .day, in: .month, for: brokerReportFromDate)!
-        
-        let brokerReportToDate = calendar.date(from:
-                .init(calendar: calendar, timeZone: calendar.timeZone,
-                      year: dateComponents.year!, month: dateComponents.month! - 1, day: range.count,
-                      hour: 23, minute: 59, second: 59)
+
+        let brokerReportToDate = calendar.date(
+            from: .init(
+                calendar: calendar, timeZone: calendar.timeZone,
+                year: dateComponents.year!, month: dateComponents.month! - 1,
+                day: range.count - 4, hour: 23, minute: 59, second: 59
+            )
         )!
-        
+
         print("🔘 Тестируем отправку запроса на формирование брокерского отчёта...", terminator: "")
-        let brokerReportTaskIdKey = "\(choosenAccount.id)[\(brokerReportFromDate)-\(brokerReportToDate)]"
-        let brokerReportTaskIdExists = userDefaults.dictionaryRepresentation().keys.contains(where: { $0 == brokerReportTaskIdKey } )
-        let brokerReportTaskId = brokerReportTaskIdExists ? userDefaults.string(forKey: brokerReportTaskIdKey)! : try await client.sendRequest(
+        let generateBrokerReportResult = try await client.sendRequest(
             .generateBrokerReport(accountId: choosenAccount.id, from: brokerReportFromDate, to: brokerReportToDate)
         )
-        printTestResult(!brokerReportTaskId.isEmpty)
-        
-        if (!brokerReportTaskIdExists && !brokerReportTaskId.isEmpty) {
-            userDefaults.setValue(brokerReportTaskId, forKey: brokerReportTaskIdKey)
-        }
-        
-        if (!brokerReportTaskId.isEmpty) {
-            print(" - ID запроса: \(brokerReportTaskId)")
-            
+        printTestResult(!generateBrokerReportResult.id.isEmpty || generateBrokerReportResult.report.page == 0)
+
+        if (generateBrokerReportResult.id.isEmpty) {
+            print(" - Брокерский отчёт за данный период запрашивался ранее.")
+        } else {
+            print(" - ID запроса: \(generateBrokerReportResult.id)")
+
             var standardOutput = FileHandle.standardOutput
-            
+
             print("🔘 Тестируем получение брокерского отчёта", terminator: "", to: &standardOutput)
             for tick in 1...5 {
                 sleep(1)
                 print("...\(tick)", terminator: "", to: &standardOutput)
             }
-            
+
             let brokerReport = try await client.sendRequest(
-                .getBrokerReport(taskId: brokerReportTaskId, page: 0)
+                .getBrokerReport(taskId: generateBrokerReportResult.id, page: 0)
             )
             printTestResult(brokerReport.page == 0)
         }
         
-        
-        let divForeignReportFromDate = calendar.date(from:
-                .init(calendar: calendar, timeZone: calendar.timeZone,
-                      year: dateComponents.year! - 1, month: 1, day: 1)
+        let divForeignReportFromDate = calendar.date(
+            from: .init(
+                calendar: calendar, timeZone: calendar.timeZone,
+                year: dateComponents.year! - 1, month: 1, day: 1
+            )
         )!
-        
-        let divForeignReportToDate = calendar.date(from:
-                .init(calendar: calendar, timeZone: calendar.timeZone,
-                      year: dateComponents.year! - 1, month: 12, day: 31,
-                      hour: 23, minute: 59, second: 59)
+
+        let divForeignReportToDate = calendar.date(
+            from: .init(
+                calendar: calendar, timeZone: calendar.timeZone,
+                year: dateComponents.year! - 1, month: 12, day: 31,
+                hour: 23, minute: 59, second: 59
+            )
         )!
         
         print("🔘 Тестируем отправку запроса на формирование отчёта отчёта \"Справка о доходах за пределами РФ\"...", terminator: "")
-        let divForeignReportTaskIdKey = "\(choosenAccount.id)[\(divForeignReportFromDate)-\(divForeignReportToDate)]"
-        let divForeignReportTaskIdExists = userDefaults.dictionaryRepresentation().keys.contains(where: { $0 == divForeignReportTaskIdKey } )
-        let divForeignReportTaskId = divForeignReportTaskIdExists ? userDefaults.string(forKey: divForeignReportTaskIdKey)! : try await client.sendRequest(
+        let generateDivForeignReportResult = try await client.sendRequest(
             .generateDivForeignIssuerReport(accountId: choosenAccount.id, from: divForeignReportFromDate, to: divForeignReportToDate)
         )
-        printTestResult(!divForeignReportTaskId.isEmpty)
-        
-        if (!divForeignReportTaskIdExists && !divForeignReportTaskId.isEmpty) {
-            userDefaults.setValue(divForeignReportTaskId, forKey: divForeignReportTaskIdKey)
-        }
-        
-        if (!divForeignReportTaskId.isEmpty) {
-            print(" - ID запроса: \(divForeignReportTaskId)")
-            
+        printTestResult(!generateDivForeignReportResult.id.isEmpty || generateDivForeignReportResult.report.page == 0)
+
+        if (generateDivForeignReportResult.id.isEmpty) {
+            print(" - Отчёт \"Справка о доходах за пределами РФ\" за данный период запрашивался ранее.")
+        } else {
+            print(" - ID запроса: \(generateDivForeignReportResult.id)")
+
             var standardOutput = FileHandle.standardOutput
-            
+
             print("🔘 Тестируем получение отчёта \"Справка о доходах за пределами РФ\"", terminator: "", to: &standardOutput)
             for tick in 1...5 {
                 sleep(1)
                 print("...\(tick)", terminator: "", to: &standardOutput)
             }
-            
+
             let divForeignReport = try await client.sendRequest(
-                .getDivForeignIssuerReport(taskId: divForeignReportTaskId, page: 0)
+                .getDivForeignIssuerReport(taskId: generateDivForeignReportResult.id, page: 0)
             )
             printTestResult(divForeignReport.page == 0)
         }
         
-        
-        let operationsByCursorFromDate = calendar.date(from:
-                .init(calendar: calendar, timeZone: calendar.timeZone,
-                      year: dateComponents.year!, month: 1, day: 1)
+        let operationsByCursorFromDate = calendar.date(
+            from: .init(
+                calendar: calendar, timeZone: calendar.timeZone,
+                year: dateComponents.year!, month: 1, day: 1
+            )
         )!
-        
+
         print("🔘 Тестируем получение списка операций по счёту с пагинацией...", terminator: "")
         let operationsByCursor = try await client.sendRequest(
             .getOperationsByCursor(
                 accountId: choosenAccount.id, instrumentId: "", from: operationsByCursorFromDate, to: fromDate,
                 cursor: "", limit: 1, types: [.buy], state: .executed, withCommissions: true, withTrades: true, withOvernights: true
-            )
+                )
         )
         printTestResult(!operationsByCursor.items.isEmpty)
         
